@@ -1,0 +1,45 @@
+# version: '3.8'
+# services:
+#   # airflow:
+#   #   build:
+#   #     context: ./docker/inference
+#   #     dockerfile: Dockerfile
+#   #   ports:
+#   #     - "8080:8080"
+#   #   volumes:
+#   #     - ./dags:/app/dags
+#   #     - ./data:/app/data
+#   #     - ./mlruns:/app/mlruns
+#   #     - ./mlflow.db:/app/mlflow.db
+#   #   environment:
+#   #     - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+#   #     - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////app/airflow.db
+#   #   depends_on:
+#   #     - mlflow
+#   mlflow:
+#     build:
+#       context: ./docker/mlflow
+#       dockerfile: Dockerfile
+#     ports:
+#       - "9000:9000"
+#     volumes:
+#       - ./mlruns:/app/mlruns
+#       - ./mlflow.db:/app/mlflow.db
+
+
+services:
+  mlflow:
+    build:
+      context: ./docker/mlflow
+      dockerfile: Dockerfile
+    environment:
+      - MLFLOW_PORT=9000
+      - MLRUNS_DIR=/mlruns
+    ports:
+      - "9000:9000"
+    volumes:
+      - mlruns:/mlruns
+
+volumes:
+  mlruns:
+    driver: local

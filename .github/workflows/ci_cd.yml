@@ -1,0 +1,30 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    - name: Install dependencies
+      run: pip install -r docker/inference/requirements.txt
+    - name: Run tests
+      run: pytest tests/
+    - name: Build inference Docker image
+      run: docker build -t batch-labeling:latest -f docker/inference/Dockerfile .
+    - name: Build MLflow Docker image
+      run: docker build -t mlflow-server:latest -f docker/mlflow/Dockerfile .
+    - name: Start Minikube
+      run: minikube start
+    - name: Deploy to Minikube
+      run: kubectl apply -f kubernetes/mlflow/ && kubectl apply -f kubernetes/inference/
+    - name: Cleanup
+      run: kubectl delete -f kubernetes/mlflow/ && kubectl delete -f kubernetes/inference/

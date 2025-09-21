@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlflow-service
+  template:
+    metadata:
+      labels:
+        app: mlflow-service
+    spec:
+      containers:
+      - name: mlflow-service
+        image: mlflow-server:latest
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+        - name: mlflow-storage
+          mountPath: /app/mlruns
+        - name: mlflow-db
+          mountPath: /app/mlflow.db
+      volumes:
+      - name: mlflow-storage
+        persistentVolumeClaim:
+          claimName: mlflow-pvc
+      - name: mlflow-db
+        persistentVolumeClaim:
+          claimName: mlflow-db-pvc

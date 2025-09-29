@@ -28,18 +28,55 @@
 
 
 services:
-  mlflow:
+  minio:
+    image: minio/minio
+    container_name: minio
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ./minio_data:/data
+
+  mlflow-server:
     build:
       context: ./docker/mlflow
       dockerfile: Dockerfile
+    container_name: mlflow-server
     environment:
-      - MLFLOW_PORT=9000
-      - MLRUNS_DIR=/mlruns
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: minio
+      AWS_SECRET_ACCESS_KEY: minio123
     ports:
-      - "9000:9000"
+      - "5000:5000"
     volumes:
-      - mlruns:/mlruns
+      - ./mlflow_data:/mlflow
+    depends_on:
+      - minio
 
-volumes:
-  mlruns:
-    driver: local
+  iris-train:
+    build:
+      context: ./src/training
+      dockerfile: Dockerfile
+    container_name: iris-train
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow-server:5000
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: minio
+      AWS_SECRET_ACCESS_KEY: minio123
+    depends_on:
+      - mlflow-server
+      - minio
+
+  iris-api:
+    build:
+      context: ./src/inference
+      dockerfile: Dockerfile
+    container_name: iris-api
+    ports:
+      - "8000:5000"
+    depends_on:
+      - iris-train

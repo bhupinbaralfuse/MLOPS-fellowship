@@ -1,21 +1,13 @@
-FROM python:3.10-slim
+FROM python:3.9-slim
 
-LABEL MAINTAINER bhupin.baral.729@gmail.com
+RUN pip install mlflow boto3
 
-WORKDIR /app
+EXPOSE 5000
 
-RUN apt update && apt upgrade -y && apt install -y sqlite3
+WORKDIR /mlflow
 
-RUN pip install --upgrade pip && pip install --no-cache-dir "mlflow==2.9.2"
+ENV MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+ENV AWS_ACCESS_KEY_ID=minio
+ENV AWS_SECRET_ACCESS_KEY=minio123
 
-ENV MLFLOW_PORT=9000
-ENV MLRUNS_DIR=/mlruns
-
-RUN mkdir -p $MLRUNS_DIR && chmod -R 777 $MLRUNS_DIR
-
-EXPOSE $MLFLOW_PORT
-
-CMD mlflow server \
-    --backend-store-uri sqlite:///$MLRUNS_DIR/mlflow.db \
-    --default-artifact-root file://$MLRUNS_DIR \
-    -h 0.0.0.0 -p $MLFLOW_PORT
+CMD ["mlflow", "server", "--backend-store-uri", "sqlite:///mlflow.db", "--default-artifact-root", "s3://mlflow/", "--host", "0.0.0.0", "--port", "5000"]
